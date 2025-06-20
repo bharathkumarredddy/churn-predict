@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Churn Risk Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h2>Customer Churn Prediction</h2>
+
+        <form method="post" action="/predict">
+            <!-- All form fields (unchanged) -->
+            <!-- Contract Type -->
+            <div class="form-group">
+                <label for="Contract">Contract Type</label>
+                <select id="Contract" name="Contract" required>
+                    <option value="">Select Contract Type</option>
+                    <option value="Month-to-month">Month-to-month</option>
+                    <option value="One year">One year</option>
+                    <option value="Two year">Two year</option>
+                </select>
+            </div>
+
+            <!-- Tenure -->
+            <div class="form-group">
+                <label for="tenure">Tenure (months)</label>
+                <input type="number" id="tenure" name="tenure" min="0" max="120" required>
+            </div>
+
+            <!-- Tech Support -->
+            <div class="form-group">
+                <label for="TechSupport">Tech Support</label>
+                <select id="TechSupport" name="TechSupport" required>
+                    <option value="">Select Tech Support</option>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+
+            <!-- Online Security -->
+            <div class="form-group">
+                <label for="OnlineSecurity">Online Security</label>
+                <select id="OnlineSecurity" name="OnlineSecurity" required>
+                    <option value="">Select Online Security</option>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+
+            <!-- Internet Service -->
+            <div class="form-group">
+                <label for="InternetService">Internet Service</label>
+                <select id="InternetService" name="InternetService" required>
+                    <option value="">Select Internet Service</option>
+                    <option value="Fiber optic">Fiber optic</option>
+                    <option value="DSL">DSL</option>
+                    <option value="No">No</option>
+                </select>
+            </div>
+
+            <!-- Monthly Charges -->
+            <div class="form-group">
+                <label for="MonthlyCharges">Monthly Charges ($)</label>
+                <input type="number" id="MonthlyCharges" name="MonthlyCharges" min="0" step="0.01" required>
+            </div>
+
+            <!-- Total Charges -->
+            <div class="form-group">
+                <label for="TotalCharges">Total Charges ($)</label>
+                <input type="number" id="TotalCharges" name="TotalCharges" min="0" step="0.01" required>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="form-group">
+                <label for="PaymentMethod">Payment Method</label>
+                <select id="PaymentMethod" name="PaymentMethod" required>
+                    <option value="">Select Payment Method</option>
+                    <option value="Electronic check">Electronic check</option>
+                    <option value="Mailed check">Mailed check</option>
+                    <option value="Bank transfer (automatic)">Bank transfer (automatic)</option>
+                    <option value="Credit card (automatic)">Credit card (automatic)</option>
+                </select>
+            </div>
+
+            <!-- Device Protection -->
+            <div class="form-group">
+                <label for="DeviceProtection">Device Protection</label>
+                <select id="DeviceProtection" name="DeviceProtection" required>
+                    <option value="">Select Device Protection</option>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+
+            <!-- Online Backup -->
+            <div class="form-group">
+                <label for="OnlineBackup">Online Backup</label>
+                <select id="OnlineBackup" name="OnlineBackup" required>
+                    <option value="">Select Online Backup</option>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+
+            <!-- Streaming Movies -->
+            <div class="form-group">
+                <label for="StreamingMovies">Streaming Movies</label>
+                <select id="StreamingMovies" name="StreamingMovies" required>
+                    <option value="">Select Streaming Movies</option>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+
+            <!-- Streaming TV -->
+            <div class="form-group">
+                <label for="StreamingTV">Streaming TV</label>
+                <select id="StreamingTV" name="StreamingTV" required>
+                    <option value="">Select Streaming TV</option>
+                    <option value="No">No</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No internet service">No internet service</option>
+                </select>
+            </div>
+
+            <input type="submit" value="Predict Risk Score">
+        </form>
+
+        {% if risk_score is defined %}
+            <div class="results">
+                <h3>Risk Score: {{ risk_score }}%</h3>
+                <h3>Model-Based Risk Category: <span class="{{ risk_category|lower }}">{{ risk_category }}</span></h3>
+                
+                {% if retention_actions %}
+      <h3>Retention Actions:</h3>
+      <ul>
+        {% for action in retention_actions %}
+          <li>{{ action }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+                
+
+                {% if rule_based_category %}
+                    <h3>Rule-Based Risk Category: <span class="{{ rule_based_category|lower }}">{{ rule_based_category }}</span></h3>
+                {% endif %}
+            </div>
+
+            <div class="lime-container">
+                <h3>Prediction Explanation</h3>
+                <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9;">
+                    {{ lime_html | safe }}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>
