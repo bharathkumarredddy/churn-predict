@@ -5,9 +5,9 @@ import lime
 import lime.lime_tabular
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
-import shap  # Make sure shap is installed
+import shap
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('Agg')  # Set backend before importing pyplot
 import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
@@ -78,6 +78,39 @@ def rule_based_risk(form_data):
     else:
         return "Low"
 
+def generate_shap_plot(input_df):
+    """Generate SHAP force plot for individual prediction"""
+    try:
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(input_df)
+        
+        # Handle single-class output case
+        if isinstance(shap_values, list) and len(shap_values) == 1:
+            shap_values = [np.zeros_like(shap_values[0]), shap_values[0]]
+            
+        # Get the correct index for binary classification
+        class_idx = 1 if len(shap_values) > 1 else 0
+        
+        plt.figure(figsize=(10, 4))
+        shap.force_plot(
+            explainer.expected_value[class_idx],
+            shap_values[class_idx][0,:],
+            input_df.iloc[0,:],
+            feature_names=feature_names,
+            matplotlib=True,
+            show=False
+        )
+        
+        plt.title("SHAP Explanation", fontsize=12)
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+        plt.close()
+        buf.seek(0)
+        return f"data:image/png;base64,{base64.b64encode(buf.read()).decode('ascii')}"
+    except Exception as e:
+        print(f"Error generating SHAP plot: {str(e)}")
+        return None
+
 # Flask app
 app = Flask(__name__)
 
@@ -107,7 +140,7 @@ def predict():
         risk_category = "High" if risk_score > 0.7 else "Medium" if risk_score > 0.3 else "Low"
 
         if risk_score > 0.7:
-            retention_action = ['Grant loyalty benefits','Offer cashback offers','Schedule agent call to customer']
+            retention_action = ['Grant loyalty benefits', 'Offer cashback offers', 'Schedule agent call to customer']
         elif risk_score > 0.3:
             retention_action = ['Grant loyalty points']
         else:
@@ -144,29 +177,6 @@ def predict():
 
     except Exception as e:
         return f"Error: {str(e)}"
-
-def generate_shap_plot(input_df):
-    """Generate SHAP force plot for individual prediction"""
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(input_df)
-    
-    plt.figure(figsize=(10, 4))
-    shap.force_plot(
-        explainer.expected_value[1],
-        shap_values[1][0,:],
-        input_df.iloc[0,:],
-        feature_names=feature_names,
-        matplotlib=True,
-        show=False
-    )
-    
-    plt.title("SHAP Force Plot for This Prediction", fontsize=12)
-    plt.gcf().set_facecolor('white')
-    buf = BytesIO()
-    plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
-    plt.close()
-    buf.seek(0)
-    return f"data:image/png;base64,{base64.b64encode(buf.read()).decode('ascii')}"
 
 if __name__ == "__main__":
     app.run(debug=True)
