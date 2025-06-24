@@ -13,16 +13,30 @@ from io import BytesIO
 import base64
 import logging
 import os
+import sklearn
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Suppress sklearn warnings
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
+
 # Load model and data
 try:
+    # Check sklearn version compatibility
+    logger.info(f"Current sklearn version: {sklearn.__version__}")
+    
     with open("RFC_Model", "rb") as model_file:
         model = pickle.load(model_file)
     logger.info("Model loaded successfully")
+    
+    # Ensure model has feature names
+    if hasattr(model, 'feature_names_in_'):
+        logger.info("Model has feature names")
+    else:
+        logger.warning("Model was fitted without feature names")
 except Exception as e:
     logger.error(f"Error loading model: {e}")
     raise
@@ -80,17 +94,18 @@ def generate_shap_plot(input_df):
         explainer = shap.TreeExplainer(model)
         shap_values = explainer.shap_values(input_df)
         
-        # Handle binary classification case
+        # Handle SHAP values based on model type
         if isinstance(shap_values, list):
             if len(shap_values) == 2:  # Binary classification
                 shap_values = shap_values[1]
                 expected_value = explainer.expected_value[1]
-            else:  # Multiclass classification
+            else:  # Multiclass
                 expected_value = explainer.expected_value[0]
                 shap_values = shap_values[0]
         else:  # Regression
             expected_value = explainer.expected_value
         
+        # Create the force plot
         plt.figure(figsize=(10, 5))
         shap.plots.force(
             base_value=expected_value,
@@ -147,8 +162,9 @@ def predict():
         except Exception as e:
             logger.error(f"Prediction error: {e}")
             return render_template("index.html", error="Prediction failed")
-        
+
         # Generate explanations
+        lime_html = None
         try:
             explainer = lime.lime_tabular.LimeTabularExplainer(
                 X_train_processed.values,
@@ -164,8 +180,7 @@ def predict():
             lime_html = lime_exp.as_html()
         except Exception as e:
             logger.error(f"LIME error: {e}")
-            lime_html = None
-        
+
         # Generate SHAP plot
         shap_plot = generate_shap_plot(input_df)
         
@@ -197,4 +212,4 @@ def predict():
         return render_template("index.html", error=str(e))
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
