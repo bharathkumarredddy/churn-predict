@@ -112,16 +112,67 @@ input[type="submit"]:hover {
 /* LIME Explanation Frame */
 .lime-container {
     margin-top: 30px;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Fixed: removed extra parenthesis */
 }
-
 .lime-container h3 {
     margin-bottom: 15px;
 }
 
-iframe {
-    width: 100%;
-    height: 500px;
-    border: 1px solid #ddd;
+/* SHAP Visualization Container */
+.shap-container {
+    margin-top: 30px;
+    background: #ffffff;
+    padding: 20px;
     border-radius: 10px;
-    background: #fff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
 }
+
+.shap-container h3 {
+    margin-bottom: 15px;
+    color: #0056b3;
+}
+
+.shap-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid #eee;
+    margin: 10px 0;
+}
+
+.shap-container p {
+    color: #6c757d;
+    font-size: 0.9em;
+    margin-top: 10px;
+    font-style: italic;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        margin: 20px;
+        padding: 10px;
+    }
+    
+    form, .results, .lime-container, .shap-container {
+        padding: 15px;
+    }
+    
+    h2 {
+        font-size: 24px;
+    }
+}
+
+/* Animation for visualizations */
+.lime-container, .shap-container {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lime-container:hover, .shap-container:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}   

@@ -153,14 +153,22 @@
                     <h3>Rule-Based Risk Category: <span class="{{ rule_based_category|lower }}">{{ rule_based_category }}</span></h3>
                 {% endif %}
             </div>
-
+            {% if lime_html %}
             <div class="lime-container">
                 <h3>Prediction Explanation</h3>
                 <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9;">
                     {{ lime_html | safe }}
                 </div>
             </div>
-        {% endif %}
+            {% endif %}
+                
+            {% if shap_plot %}
+            <div class="shap-container">
+                <h3>Detailed Feature Impact (SHAP)</h3>
+                <img src="{{ shap_plot }}" alt="SHAP explanation">
+                <p>Red features increase churn risk, blue features decrease it.</p>
+            </div>
+            {% endif %}
     </div>
 </body>
 </html>
