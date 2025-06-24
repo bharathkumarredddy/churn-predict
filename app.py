@@ -76,37 +76,28 @@ def rule_based_risk(form_data):
 # SHAP visualization
 def generate_shap_plot(input_df):
     try:
-        # Use SHAP Explainer (automatically selects correct method for the model)
+        # Use SHAP's universal Explainer
         explainer = shap.Explainer(model, X_train_processed)
         shap_values = explainer(input_df)
 
-        # Get the base value, shap values, and features for the first instance
-        base_value = shap_values.base_values[0]
-        values = shap_values.values[0]
-        features = input_df.iloc[0]
+        # Get the JS visualization as HTML
+        shap_js = shap.getjs()
+        force_plot_html = shap.plots.force(shap_values[0], matplotlib=False)
 
-        # Generate the force plot as HTML using new SHAP format (v0.20+)
-        shap_html = f"""
-        <!DOCTYPE html>
+        # Combine into full HTML
+        full_html = f"""
         <html>
-        <head>
-            {shap.getjs()}
-        </head>
-        <body>
-            <div id='shap'></div>
-            <script>
-                {shap.plots.force(base_value, values, features, matplotlib=False).html()}
-            </script>
-        </body>
+        <head>{shap_js}</head>
+        <body>{force_plot_html}</body>
         </html>
         """
 
-        # Save the SHAP force plot as an HTML file
+        # Write to templates/shap.html
+        os.makedirs("templates", exist_ok=True)  # Make sure folder exists
         with open("templates/shap.html", "w", encoding="utf-8") as f:
-            f.write(shap_html)
+            f.write(full_html)
 
         return True
-
     except Exception as e:
         logger.error(f"SHAP error: {e}")
         return False
