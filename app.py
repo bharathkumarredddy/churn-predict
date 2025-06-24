@@ -8,34 +8,25 @@ from sklearn.preprocessing import LabelEncoder
 import shap
 import matplotlib
 matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from io import BytesIO
-import base64
 import logging
 import os
-import sklearn
 import warnings
 
-# Configure logging
+# Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 warnings.filterwarnings("ignore", category=UserWarning)
 
 # Load model
 try:
-    logger.info(f"Current sklearn version: {sklearn.__version__}")
     with open("RFC_Model", "rb") as model_file:
         model = pickle.load(model_file)
     logger.info("Model loaded successfully")
-    if hasattr(model, 'feature_names_in_'):
-        logger.info("Model has feature names")
-    else:
-        logger.warning("Model was fitted without feature names")
 except Exception as e:
     logger.error(f"Error loading model: {e}")
     raise
 
-# Feature definitions
+# Features
 numerical_features = ['tenure', 'MonthlyCharges', 'TotalCharges']
 categorical_features = [
     'Contract', 'TechSupport', 'OnlineSecurity', 'InternetService',
@@ -44,7 +35,7 @@ categorical_features = [
 ]
 feature_names = numerical_features + categorical_features
 
-# Load training data for LIME and encoders
+# Load and process training data
 try:
     X_train_raw = pd.read_csv("Telco-Customer-Churn.csv")
     X_train_raw['TotalCharges'] = pd.to_numeric(X_train_raw['TotalCharges'], errors='coerce')
@@ -54,14 +45,14 @@ try:
         le = LabelEncoder()
         le.fit(X_train_raw[col].astype(str))
         label_encoders[col] = le
-    
+
     X_train_processed = X_train_raw[feature_names].copy()
     X_train_processed[numerical_features] = X_train_processed[numerical_features].apply(pd.to_numeric, errors='coerce')
     X_train_processed.dropna(inplace=True)
     for col in categorical_features:
         X_train_processed[col] = label_encoders[col].transform(X_train_processed[col].astype(str))
 except Exception as e:
-    logger.error(f"Data loading error: {e}")
+    logger.error(f"Data processing error: {e}")
     raise
 
 # Rule-based logic
@@ -82,87 +73,70 @@ def rule_based_risk(form_data):
         logger.error(f"Rule-based error: {e}")
         return "Unknown"
 
-# SHAP visualization
+# SHAP force plot
 def generate_shap_plot(input_df):
     try:
         explainer = shap.TreeExplainer(model)
         shap_values = explainer(input_df)
 
-        shap_image = shap.plots.force(
+        force_html = shap.plots.force(
             explainer.expected_value,
             shap_values.values[0],
-            input_df.iloc[0],
-            show=False
-        )
+            input_df.iloc[0]
+        ).html()
 
-        # Save SHAP force plot as HTML
-        shap_html = f"<!DOCTYPE html><html><head><meta charset='utf-8'></head><body>{shap.getjs()}<div id='shap'></div><script>{shap_image.html()}</script></body></html>"
+        full_html = f"""
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <script src="https://cdn.jsdelivr.net/npm/shap@latest/dist/shap.min.js"></script>
+        </head>
+        <body>{force_html}</body>
+        </html>
+        """
+
         with open("templates/shap.html", "w", encoding="utf-8") as f:
-            f.write(shap_html)
-        
+            f.write(full_html)
         return True
     except Exception as e:
         logger.error(f"SHAP error: {e}")
         return False
 
-# Flask app setup
 app = Flask(__name__)
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
-@app.route("/shap")
-def shap_plot():
-    return render_template("shap.html")
-
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
         form_data = request.form
         input_data = []
-
         for feature in feature_names:
             value = form_data.get(feature, '')
             if feature in numerical_features:
-                try:
-                    input_data.append(float(value))
-                except ValueError:
-                    return render_template("index.html", error=f"Invalid value for {feature}")
+                input_data.append(float(value))
             else:
-                try:
-                    input_data.append(label_encoders[feature].transform([value])[0])
-                except ValueError:
-                    return render_template("index.html", error=f"Invalid value for {feature}")
-
+                input_data.append(label_encoders[feature].transform([value])[0])
         input_df = pd.DataFrame([input_data], columns=feature_names)
 
         risk_prob = model.predict_proba(input_df)[0][1]
         risk_score = round(risk_prob * 100, 2)
         risk_category = "High" if risk_prob > 0.7 else "Medium" if risk_prob > 0.4 else "Low"
 
-        # LIME explanation
-        lime_html = None
-        try:
-            explainer = lime.lime_tabular.LimeTabularExplainer(
-                X_train_processed.values,
-                feature_names=feature_names,
-                class_names=['No Churn', 'Churn'],
-                mode='classification'
-            )
-            lime_exp = explainer.explain_instance(
-                input_df.values[0],
-                model.predict_proba,
-                num_features=5
-            )
-            lime_html = lime_exp.as_html()
-        except Exception as e:
-            logger.error(f"LIME error: {e}")
+        explainer = lime.lime_tabular.LimeTabularExplainer(
+            X_train_processed.values,
+            feature_names=feature_names,
+            class_names=['No Churn', 'Churn'],
+            mode='classification'
+        )
+        lime_exp = explainer.explain_instance(input_df.values[0], model.predict_proba, num_features=5)
+        lime_html = lime_exp.as_html()
 
-        # SHAP force plot
         shap_success = generate_shap_plot(input_df)
+        shap_plot_url = "/shap" if shap_success else None
 
-        # Retention actions
         retention_actions = []
         if risk_prob > 0.7:
             retention_actions = ["Offer discount", "Assign account manager", "Free service upgrade"]
@@ -170,7 +144,6 @@ def predict():
             retention_actions = ["Loyalty points bonus", "Personalized email campaign"]
         else:
             retention_actions = ["Standard engagement"]
-
         if form_data.get('TechSupport') == 'No':
             retention_actions.append("Offer free tech support trial")
 
@@ -181,12 +154,15 @@ def predict():
             retention_actions=retention_actions,
             rule_based_category=rule_based_risk(form_data),
             lime_html=lime_html,
-            shap_plot="/shap" if shap_success else None
+            shap_plot=shap_plot_url
         )
-
     except Exception as e:
         logger.error(f"Prediction error: {e}")
         return render_template("index.html", error=str(e))
+
+@app.route("/shap")
+def shap_plot():
+    return render_template("shap.html")
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
