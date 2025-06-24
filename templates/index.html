@@ -3,176 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Churn Risk Predictor</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Customer Churn Prediction</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container">
-        <h2>Customer Churn Prediction</h2>
-
+        <h1>Customer Churn Prediction</h1>
+        
         {% if error %}
-        <div class="results" style="color: red; margin-bottom: 20px;">
-            <strong>Error:</strong> {{ error }}
-        </div>
+        <div class="error">{{ error }}</div>
         {% endif %}
 
-        <form method="post" action="/predict">
-            <!-- Contract Type -->
+        <form action="/predict" method="POST">
+            <h2>Customer Information</h2>
+            
             <div class="form-group">
-                <label for="Contract">Contract Type</label>
+                <label for="tenure">Tenure (months):</label>
+                <input type="number" id="tenure" name="tenure" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="MonthlyCharges">Monthly Charges ($):</label>
+                <input type="number" step="0.01" id="MonthlyCharges" name="MonthlyCharges" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="TotalCharges">Total Charges ($):</label>
+                <input type="number" step="0.01" id="TotalCharges" name="TotalCharges" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="Contract">Contract Type:</label>
                 <select id="Contract" name="Contract" required>
-                    <option value="">Select Contract Type</option>
                     <option value="Month-to-month">Month-to-month</option>
                     <option value="One year">One year</option>
                     <option value="Two year">Two year</option>
                 </select>
             </div>
-
-            <!-- Tenure -->
+            
             <div class="form-group">
-                <label for="tenure">Tenure (months)</label>
-                <input type="number" id="tenure" name="tenure" min="0" max="120" required>
-            </div>
-
-            <!-- Tech Support -->
-            <div class="form-group">
-                <label for="TechSupport">Tech Support</label>
+                <label for="TechSupport">Tech Support:</label>
                 <select id="TechSupport" name="TechSupport" required>
-                    <option value="">Select Tech Support</option>
                     <option value="No">No</option>
                     <option value="Yes">Yes</option>
                     <option value="No internet service">No internet service</option>
                 </select>
             </div>
-
-            <!-- Online Security -->
-            <div class="form-group">
-                <label for="OnlineSecurity">Online Security</label>
-                <select id="OnlineSecurity" name="OnlineSecurity" required>
-                    <option value="">Select Online Security</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
-                </select>
-            </div>
-
-            <!-- Internet Service -->
-            <div class="form-group">
-                <label for="InternetService">Internet Service</label>
-                <select id="InternetService" name="InternetService" required>
-                    <option value="">Select Internet Service</option>
-                    <option value="Fiber optic">Fiber optic</option>
-                    <option value="DSL">DSL</option>
-                    <option value="No">No</option>
-                </select>
-            </div>
-
-            <!-- Monthly Charges -->
-            <div class="form-group">
-                <label for="MonthlyCharges">Monthly Charges ($)</label>
-                <input type="number" id="MonthlyCharges" name="MonthlyCharges" min="0" step="0.01" required>
-            </div>
-
-            <!-- Total Charges -->
-            <div class="form-group">
-                <label for="TotalCharges">Total Charges ($)</label>
-                <input type="number" id="TotalCharges" name="TotalCharges" min="0" step="0.01" required>
-            </div>
-
-            <!-- Payment Method -->
-            <div class="form-group">
-                <label for="PaymentMethod">Payment Method</label>
-                <select id="PaymentMethod" name="PaymentMethod" required>
-                    <option value="">Select Payment Method</option>
-                    <option value="Electronic check">Electronic check</option>
-                    <option value="Mailed check">Mailed check</option>
-                    <option value="Bank transfer (automatic)">Bank transfer (automatic)</option>
-                    <option value="Credit card (automatic)">Credit card (automatic)</option>
-                </select>
-            </div>
-
-            <!-- Device Protection -->
-            <div class="form-group">
-                <label for="DeviceProtection">Device Protection</label>
-                <select id="DeviceProtection" name="DeviceProtection" required>
-                    <option value="">Select Device Protection</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
-                </select>
-            </div>
-
-            <!-- Online Backup -->
-            <div class="form-group">
-                <label for="OnlineBackup">Online Backup</label>
-                <select id="OnlineBackup" name="OnlineBackup" required>
-                    <option value="">Select Online Backup</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
-                </select>
-            </div>
-
-            <!-- Streaming Movies -->
-            <div class="form-group">
-                <label for="StreamingMovies">Streaming Movies</label>
-                <select id="StreamingMovies" name="StreamingMovies" required>
-                    <option value="">Select Streaming Movies</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
-                </select>
-            </div>
-
-            <!-- Streaming TV -->
-            <div class="form-group">
-                <label for="StreamingTV">Streaming TV</label>
-                <select id="StreamingTV" name="StreamingTV" required>
-                    <option value="">Select Streaming TV</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
-                </select>
-            </div>
-
-            <input type="submit" value="Predict Churn Risk & Explanations">
+            
+            <!-- Add other categorical features similarly -->
+            
+            <button type="submit">Predict Churn Risk</button>
         </form>
 
-        {% if risk_score is defined %}
+        {% if risk_score is not none %}
         <div class="results">
-            <h3>Risk Score: {{ risk_score }}%</h3>
-            <h3>Model-Based Risk Category: <span class="{{ risk_category|lower }}">{{ risk_category }}</span></h3>
-
-            {% if retention_actions %}
-            <h3>Retention Actions:</h3>
-            <ul>
-                {% for action in retention_actions %}
-                <li>{{ action }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
-
-            {% if rule_based_category %}
-            <h3>Rule-Based Risk Category: <span class="{{ rule_based_category|lower }}">{{ rule_based_category }}</span></h3>
-            {% endif %}
-        </div>
-
-        {% if lime_html %}
-        <div class="lime-container">
-            <h3>Prediction Explanation (LIME)</h3>
-            <div style="max-height: 400px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; background: #f9f9f9;">
-                {{ lime_html | safe }}
+            <h2>Prediction Results</h2>
+            
+            <div class="result-card">
+                <h3>Churn Risk Score</h3>
+                <div class="risk-level {{ risk_category|lower }}">
+                    {{ risk_score }}% ({{ risk_category }})
+                </div>
             </div>
+            
+            <div class="result-card">
+                <h3>Rule-Based Assessment</h3>
+                <div class="risk-level {{ rule_based_category|lower }}">
+                    {{ rule_based_category }}
+                </div>
+            </div>
+            
+            <div class="result-card">
+                <h3>Recommended Actions</h3>
+                <ul>
+                    {% for action in retention_actions %}
+                    <li>{{ action }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            
+            {% if lime_html %}
+            <div class="visualization">
+                <h3>LIME Explanation</h3>
+                {{ lime_html|safe }}
+            </div>
+            {% endif %}
+            
+            {% if shap_plot_path %}
+            <div class="visualization">
+                <h3>SHAP Explanation</h3>
+                <iframe src="/shap_plot/{{ shap_plot_path }}" width="100%" height="400" frameborder="0"></iframe>
+            </div>
+            {% endif %}
         </div>
-        {% endif %}
-
-        {% if shap_plot %}
-        <div class="shap-container">
-            <h3>Detailed Feature Impact (SHAP)</h3>
-            <iframe src="{{ shap_plot }}" width="100%" height="400px" style="border:none;"></iframe>
-            <p>Red features increase churn risk, blue features decrease it.</p>
-        </div>
-        {% endif %}
         {% endif %}
     </div>
 </body>
