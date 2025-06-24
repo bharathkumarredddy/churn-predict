@@ -1,178 +1,228 @@
-/* General Page Styling */
+/* Base Styles */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 40px auto;
-    max-width: 800px;
-    background-color: #f8f9fa;
-    color: #333;
     line-height: 1.6;
+    color: #333;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 20px;
 }
 
-/* Headings */
-h2 {
-    color: #0056b3;
-    margin-bottom: 25px;
-    text-align: center;
-    font-size: 28px;
-}
-
-h3 {
-    margin-top: 30px;
-    color: #0056b3;
-}
-
-/* Form Styling */
-form {
-    background: #ffffff;
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: white;
     padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2, h3 {
+    color: #2c3e50;
+}
+
+/* Form Styles */
+form {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 30px;
 }
 
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 label {
     display: block;
-    margin-bottom: 8px;
-    font-weight: 600;
-    color: #495057;
-}
-
-select, input[type="number"] {
-    width: 100%;
-    padding: 12px;
     margin-bottom: 5px;
-    border: 1px solid #ced4da;
-    border-radius: 6px;
-    font-size: 15px;
-    background-color: #fff;
-    transition: border-color 0.3s ease;
+    font-weight: 600;
 }
 
-select:focus, input[type="number"]:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
-}
-
-/* Submit Button */
-input[type="submit"] {
+input, select {
     width: 100%;
-    padding: 14px;
-    background-color: #007bff;
-    border: none;
-    color: white;
-    font-weight: bold;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
     font-size: 16px;
-    border-radius: 6px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
-    margin-top: 15px;
+    font-size: 16px;
+    transition: all 0.3s;
 }
 
-input[type="submit"]:hover {
-    background-color: #0069d9;
+.predict-btn {
+    background-color: #3498db;
+    color: white;
 }
 
-/* Results Section */
-.results {
-    background: #ffffff;
-    padding: 25px;
+.reset-btn {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+}
+
+/* Results Styles */
+.results-container {
     margin-top: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+}
+
+.risk-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.risk-score {
+    margin: 20px 0;
+}
+
+.score-value {
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: #2c3e50;
+    display: block;
+    margin: 10px 0;
+}
+
+.risk-meter {
+    height: 20px;
+    background: #ecf0f1;
     border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin: 15px 0;
+    overflow: hidden;
+}
+
+.meter-bar {
+    height: 100%;
+    background: linear-gradient(to right, #2ecc71, #f1c40f, #e74c3c);
+    transition: width 0.5s ease;
+}
+
+.risk-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+.risk-categories {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin: 25px 0;
+}
+
+.model-category, .rule-category {
     text-align: center;
 }
 
-.results h3 {
-    margin: 0 0 15px 0;
+.risk-tag {
+    display: inline-block;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    margin-top: 10px;
 }
 
-/* Risk Category Colors */
 .low {
-    color: #28a745;
-    font-weight: bold;
-    font-size: 18px;
+    background-color: #2ecc71;
+    color: white;
 }
 
 .medium {
-    color: #fd7e14;
-    font-weight: bold;
-    font-size: 18px;
+    background-color: #f1c40f;
+    color: #333;
 }
 
 .high {
-    color: #dc3545;
-    font-weight: bold;
-    font-size: 18px;
+    background-color: #e74c3c;
+    color: white;
 }
 
-/* LIME Explanation Frame */
-.lime-container {
-    margin-top: 30px;
-    background: #ffffff;
+/* Retention Actions */
+.retention-actions {
+    background: #e8f4fc;
+    padding: 15px 20px;
+    border-radius: 5px;
+    margin: 20px 0;
+}
+
+.retention-actions ul {
+    padding-left: 20px;
+}
+
+.retention-actions li {
+    margin-bottom: 8px;
+}
+
+/* Explanation Sections */
+.lime-explanation, .shap-visualization {
+    margin: 30px 0;
     padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1); /* Fixed: removed extra parenthesis */
-}
-.lime-container h3 {
-    margin-bottom: 15px;
+    background: #f9f9f9;
+    border-radius: 5px;
 }
 
-/* SHAP Visualization Container */
+.lime-content {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 15px;
+    background: white;
+    border: 1px solid #ddd;
+}
+
 .shap-container {
-    margin-top: 30px;
-    background: #ffffff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    margin: 15px 0;
     text-align: center;
-}
-
-.shap-container h3 {
-    margin-bottom: 15px;
-    color: #0056b3;
 }
 
 .shap-container img {
     max-width: 100%;
-    height: auto;
-    border-radius: 6px;
-    border: 1px solid #eee;
-    margin: 10px 0;
+    border: 1px solid #ddd;
+    padding: 10px;
+    background: white;
 }
 
-.shap-container p {
-    color: #6c757d;
-    font-size: 0.9em;
+.shap-caption {
+    font-size: 0.9rem;
+    color: #7f8c8d;
     margin-top: 10px;
-    font-style: italic;
 }
 
-/* Responsive Design */
-@media (max-width: 768px) {
-    body {
-        margin: 20px;
-        padding: 10px;
-    }
-    
-    form, .results, .lime-container, .shap-container {
-        padding: 15px;
-    }
-    
-    h2 {
-        font-size: 24px;
-    }
+.positive {
+    color: #e74c3c;
+    font-weight: bold;
 }
 
-/* Animation for visualizations */
-.lime-container, .shap-container {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+.negative {
+    color: #3498db;
+    font-weight: bold;
 }
 
-.lime-container:hover, .shap-container:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
-}   
+/* Error Message */
+.error-message {
+    color: #e74c3c;
+    background: #fdecea;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    border-left: 4px solid #e74c3c;
+}
