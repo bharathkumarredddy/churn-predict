@@ -55,15 +55,6 @@ except Exception as e:
     logger.error(f"Data loading error: {e}")
     raise
 
-# Initialize SHAP explainer
-explainer = None
-
-def get_shap_explainer():
-    global explainer
-    if explainer is None:
-        explainer = shap.Explainer(model, X_train_processed)
-    return explainer
-
 # Rule-based risk function
 def rule_based_risk(form_data):
     try:
@@ -85,44 +76,40 @@ def rule_based_risk(form_data):
 # SHAP visualization
 def generate_shap_plot(input_df):
     try:
-        explainer = get_shap_explainer()
+        # Use SHAP Explainer (automatically selects correct method for the model)
+        explainer = shap.Explainer(model, X_train_processed)
         shap_values = explainer(input_df)
-        
+
+        # Get the base value, shap values, and features for the first instance
         base_value = shap_values.base_values[0]
-        shap_values_instance = shap_values.values[0]
+        values = shap_values.values[0]
         features = input_df.iloc[0]
-        
-        force_plot = shap.plots.force(
-            base_value=base_value,
-            shap_values=shap_values_instance,
-            features=features,
-            matplotlib=False,
-            show=False
-        )
-        
+
+        # Generate the force plot as HTML using new SHAP format (v0.20+)
         shap_html = f"""
+        <!DOCTYPE html>
         <html>
         <head>
-            <meta charset="UTF-8">
             {shap.getjs()}
         </head>
         <body>
-            {force_plot.html()}
+            <div id='shap'></div>
+            <script>
+                {shap.plots.force(base_value, values, features, matplotlib=False).html()}
+            </script>
         </body>
         </html>
         """
-        
-        os.makedirs("templates/shap_plots", exist_ok=True)
-        plot_file = f"shap_plots/plot_{np.random.randint(10000)}.html"
-        
-        with open(f"templates/{plot_file}", "w", encoding="utf-8") as f:
+
+        # Save the SHAP force plot as an HTML file
+        with open("templates/shap.html", "w", encoding="utf-8") as f:
             f.write(shap_html)
-            
-        return plot_file
-        
+
+        return True
+
     except Exception as e:
         logger.error(f"SHAP error: {e}")
-        return None
+        return False
 
 # Flask app setup
 app = Flask(__name__)
@@ -131,9 +118,9 @@ app = Flask(__name__)
 def home():
     return render_template("index.html")
 
-@app.route("/shap_plot/<path:filename>")
-def shap_plot(filename):
-    return render_template(f"shap_plots/{filename}")
+@app.route("/shap")
+def shap_plot():
+    return render_template("shap.html")
 
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -179,7 +166,7 @@ def predict():
             logger.error(f"LIME error: {e}")
 
         # SHAP Force Plot
-        shap_plot_path = generate_shap_plot(input_df)
+        shap_success = generate_shap_plot(input_df)
 
         # Retention Actions
         retention_actions = []
@@ -200,7 +187,7 @@ def predict():
             retention_actions=retention_actions,
             rule_based_category=rule_based_risk(form_data),
             lime_html=lime_html,
-            shap_plot_path=shap_plot_path
+            shap_plot="/shap" if shap_success else None
         )
     except Exception as e:
         logger.error(f"Prediction error: {e}")
