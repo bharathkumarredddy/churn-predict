@@ -6,183 +6,187 @@ import lime.lime_tabular
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 import shap
-import matplotlib
-matplotlib.use('Agg')
-import logging
 import os
-import warnings
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-warnings.filterwarnings("ignore", category=UserWarning)
-
-# Load model
-try:
-    with open("RFC_Model", "rb") as model_file:
-        model = pickle.load(model_file)
-    logger.info("Model loaded successfully")
-except Exception as e:
-    logger.error(f"Error loading model: {e}")
-    raise
-
-# Feature definitions
+from shap import Explanation
+ 
+# Load trained RandomForestClassifier model
+model = pickle.load(open("RFC_Model", "rb"))
+ 
+# Define features
 numerical_features = ['tenure', 'MonthlyCharges', 'TotalCharges']
-categorical_features = [
-    'Contract', 'TechSupport', 'OnlineSecurity', 'InternetService',
-    'PaymentMethod', 'DeviceProtection', 'OnlineBackup',
-    'StreamingMovies', 'StreamingTV'
-]
+categorical_features = ['Contract', 'TechSupport', 'OnlineSecurity', 'InternetService',
+                      'PaymentMethod', 'DeviceProtection',
+                      'OnlineBackup', 'StreamingMovies', 'StreamingTV']
 feature_names = numerical_features + categorical_features
-
-# Load training data for LIME and encoders
-try:
-    X_train_raw = pd.read_csv("Telco-Customer-Churn.csv")
-    X_train_raw['TotalCharges'] = pd.to_numeric(X_train_raw['TotalCharges'], errors='coerce')
-
-    label_encoders = {}
-    for col in categorical_features:
-        le = LabelEncoder()
-        le.fit(X_train_raw[col].astype(str))
-        label_encoders[col] = le
-
-    X_train_processed = X_train_raw[feature_names].copy()
-    X_train_processed[numerical_features] = X_train_processed[numerical_features].apply(pd.to_numeric, errors='coerce')
-    X_train_processed.dropna(inplace=True)
-    for col in categorical_features:
-        X_train_processed[col] = label_encoders[col].transform(X_train_processed[col].astype(str))
-except Exception as e:
-    logger.error(f"Data loading error: {e}")
-    raise
-
-# Rule-based risk function
+ 
+# Load raw training data
+X_train_raw = pd.read_csv("Telco-Customer-Churn.csv")
+X_train_raw['TotalCharges'] = pd.to_numeric(X_train_raw['TotalCharges'], errors='coerce')
+ 
+# Initialize LabelEncoders using actual data
+label_encoders = {}
+for col in categorical_features:
+    le = LabelEncoder()
+    le.fit(X_train_raw[col].astype(str))
+    label_encoders[col] = le
+ 
+# Preprocess training data for LIME and SHAP
+X_train_processed = X_train_raw[feature_names].copy()
+X_train_processed[numerical_features] = X_train_processed[numerical_features].apply(pd.to_numeric, errors='coerce')
+X_train_processed.dropna(inplace=True)
+for col in categorical_features:
+    X_train_processed[col] = label_encoders[col].transform(X_train_processed[col].astype(str))
+ 
+# Initialize SHAP explainer
+shap_explainer = shap.TreeExplainer(model)
+ 
+# Rule-based logic function
 def rule_based_risk(form_data):
-    try:
-        risk_factors = {
-            'contract': 3 if form_data.get('Contract') == 'Month-to-month' else 0,
-            'tech_support': 2 if form_data.get('TechSupport') == 'No' else 0,
-            'security': 2 if form_data.get('OnlineSecurity') == 'No' else 0,
-            'internet': 1 if form_data.get('InternetService') == 'Fiber optic' else 0,
-            'payment': 1 if form_data.get('PaymentMethod') == 'Electronic check' else 0,
-            'tenure': 2 if float(form_data.get('tenure', 0)) < 6 else 1 if float(form_data.get('tenure', 0)) < 12 else 0,
-            'monthly': 1 if float(form_data.get('MonthlyCharges', 0)) > 70 else 0
-        }
-        total = sum(risk_factors.values())
-        return "High" if total >= 6 else "Medium" if total >= 3 else "Low"
-    except Exception as e:
-        logger.error(f"Rule-based error: {e}")
-        return "Unknown"
-
-# SHAP visualization
+    high_risk_conditions = [
+        form_data['Contract'] == 'Month-to-month',
+        form_data['TechSupport'] == 'No',
+        form_data['OnlineSecurity'] == 'No',
+        form_data['InternetService'] == 'Fiber optic',
+        form_data['PaymentMethod'] == 'Electronic check',
+        form_data['DeviceProtection'] == 'No',
+        form_data['OnlineBackup'] == 'No',
+        form_data['StreamingMovies'] == 'Yes',
+        form_data['StreamingTV'] == 'Yes',
+        float(form_data['tenure']) < 6,
+        float(form_data['MonthlyCharges']) > 80,
+        float(form_data['TotalCharges']) < 200,
+    ]
+ 
+    medium_risk_conditions = [
+        form_data['Contract'] == 'One year',
+        form_data['TechSupport'] == 'No',
+        form_data['OnlineSecurity'] == 'No',
+        form_data['InternetService'] == 'DSL',
+        form_data['DeviceProtection'] == 'No',
+        6 <= float(form_data['tenure']) < 12,
+        60 <= float(form_data['MonthlyCharges']) <= 80,
+        200 <= float(form_data['TotalCharges']) < 500,
+    ]
+ 
+    high_score = sum(high_risk_conditions)
+    medium_score = sum(medium_risk_conditions)
+ 
+    if high_score >= 6:
+        return "High"
+    elif medium_score >= 4:
+        return "Medium"
+    else:
+        return "Low"
+ 
+# Function to generate SHAP force plot HTML
 def generate_shap_plot(input_df):
+    # Calculate SHAP values
+    shap_values = shap_explainer.shap_values(input_df)
+   
+    # For binary classification, we'll use the SHAP values for class 1 (churn)
+    if isinstance(shap_values, list):
+        shap_values = shap_values[1]
+        base_value = shap_explainer.expected_value[1]
+    else:
+        base_value = shap_explainer.expected_value
+   
+    # Create force plot
+    force_plot = shap.force_plot(
+        base_value=base_value,
+        shap_values=shap_values[0],
+        features=input_df.iloc[0],
+        feature_names=feature_names,
+        matplotlib=False,
+        show=False
+    )
+   
+    # Save to temporary HTML file with UTF-8 encoding
+    temp_file = 'temp_shap.html'
+    shap.save_html(temp_file, force_plot)
+   
+    # Read the HTML content with UTF-8 encoding
     try:
-        # Use SHAP's universal Explainer
-        explainer = shap.Explainer(model, X_train_processed)
-        shap_values = explainer(input_df)
-
-        # Get the JS visualization as HTML
-        shap_js = shap.getjs()
-        force_plot_html = shap.plots.force(shap_values[0], matplotlib=False)
-
-        # Combine into full HTML
-        full_html = f"""
-        <html>
-        <head>{shap_js}</head>
-        <body>{force_plot_html}</body>
-        </html>
-        """
-
-        # Write to templates/shap.html
-        os.makedirs("templates", exist_ok=True)  # Make sure folder exists
-        with open("templates/shap.html", "w", encoding="utf-8") as f:
-            f.write(full_html)
-
-        return True
-    except Exception as e:
-        logger.error(f"SHAP error: {e}")
-        return False
-
-# Flask app setup
+        with open(temp_file, 'r', encoding='utf-8') as file:
+            shap_html = file.read()
+    except UnicodeDecodeError:
+        # Fallback to latin-1 if UTF-8 fails (though it shouldn't with SHAP output)
+        with open(temp_file, 'r', encoding='latin-1') as file:
+            shap_html = file.read()
+   
+    # Delete the temporary file
+    try:
+        os.remove(temp_file)
+    except:
+        pass
+   
+    return shap_html
+ 
+# Flask app
 app = Flask(__name__)
-
+ 
 @app.route("/")
 def home():
     return render_template("index.html")
-
-@app.route("/shap")
-def shap_plot():
-    return render_template("shap.html")
-
+ 
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        form_data = request.form
         input_data = []
-
         for feature in feature_names:
-            value = form_data.get(feature, '')
+            value = request.form[feature]
             if feature in numerical_features:
-                try:
-                    input_data.append(float(value))
-                except ValueError:
-                    return render_template("index.html", error=f"Invalid value for {feature}")
+                input_data.append(float(value))
             else:
-                try:
-                    input_data.append(label_encoders[feature].transform([value])[0])
-                except ValueError:
-                    return render_template("index.html", error=f"Invalid value for {feature}")
-
+                encoder = label_encoders[feature]
+                if value in encoder.classes_:
+                    input_data.append(encoder.transform([value])[0])
+                else:
+                    return f"Invalid value '{value}' for feature '{feature}'"
+ 
         input_df = pd.DataFrame([input_data], columns=feature_names)
-
-        risk_prob = model.predict_proba(input_df)[0][1]
-        risk_score = round(risk_prob * 100, 2)
-        risk_category = "High" if risk_prob > 0.7 else "Medium" if risk_prob > 0.4 else "Low"
-
-        # LIME Explanation
-        lime_html = None
-        try:
-            explainer = lime.lime_tabular.LimeTabularExplainer(
-                X_train_processed.values,
-                feature_names=feature_names,
-                class_names=['No Churn', 'Churn'],
-                mode='classification'
-            )
-            lime_exp = explainer.explain_instance(
-                input_df.values[0],
-                model.predict_proba,
-                num_features=5
-            )
-            lime_html = lime_exp.as_html()
-        except Exception as e:
-            logger.error(f"LIME error: {e}")
-
-        # SHAP Force Plot
-        shap_success = generate_shap_plot(input_df)
-
-        # Retention Actions
-        retention_actions = []
-        if risk_prob > 0.7:
-            retention_actions = ["Offer discount", "Assign account manager", "Free service upgrade"]
-        elif risk_prob > 0.4:
-            retention_actions = ["Loyalty points bonus", "Personalized email campaign"]
+ 
+        # Model-based risk prediction
+        risk_score = model.predict_proba(input_df)[0][1]
+        risk_category = "High" if risk_score > 0.7 else "Medium" if risk_score > 0.3 else "Low"
+ 
+        if risk_score > 0.7:
+            retention_action = ['Grant loyalty benefits', 'Offer cashback offers', 'Schedule agent call to customer']
+        elif risk_score > 0.3:
+            retention_action = ['Grant loyalty points']
         else:
-            retention_actions = ["Standard engagement"]
-
-        if form_data.get('TechSupport') == 'No':
-            retention_actions.append("Offer free tech support trial")
-
-        return render_template(
-            "index.html",
-            risk_score=risk_score,
-            risk_category=risk_category,
-            retention_actions=retention_actions,
-            rule_based_category=rule_based_risk(form_data),
-            lime_html=lime_html,
-            shap_plot="/shap" if shap_success else None
+            retention_action = ['No Action Required']
+ 
+        # Rule-based category
+        rule_based_category = rule_based_risk(request.form)
+ 
+        # LIME explanation
+        explainer = lime.lime_tabular.LimeTabularExplainer(
+            training_data=np.array(X_train_processed),
+            feature_names=feature_names,
+            class_names=['No Churn', 'Churn'],
+            mode='classification'
         )
+ 
+        explanation = explainer.explain_instance(
+            input_df.values[0],
+            model.predict_proba,
+            num_features=4
+        )
+        lime_html = explanation.as_html()
+ 
+        # SHAP explanation
+        shap_html = generate_shap_plot(input_df)
+ 
+        return render_template("index.html",
+                           risk_score=round(risk_score * 100, 2),
+                           risk_category=risk_category,
+                           retention_actions=retention_action,
+                           rule_based_category=rule_based_category,
+                           lime_html=lime_html,
+                           shap_html=shap_html)
+ 
     except Exception as e:
-        logger.error(f"Prediction error: {e}")
-        return render_template("index.html", error=str(e))
-
+        return f"Error: {str(e)}"
+ 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=False)
+    app.run(debug=True)
