@@ -164,12 +164,17 @@
 
                 
             {% if shap_plot %}
-            <div class="shap-container">
-                <h3>Detailed Feature Impact (SHAP)</h3>
-                <img src="{{ shap_plot }}" alt="SHAP explanation">
-                <p>Red features increase churn risk, blue features decrease it.</p>
-            </div>
-            {% endif %}
+<div class="shap-container">
+    <h3>Feature Impact Analysis</h3>
+    <div class="shap-image-container">
+        <img src="{{ shap_plot }}" alt="SHAP explanation" class="shap-image">
+    </div>
+    <p class="shap-caption">
+        Red features increase churn risk, blue features decrease it.
+        Larger bars indicate stronger impact.
+    </p>
+</div>
+{% endif %}
         {% endif %}    
     </div>
 </body>
