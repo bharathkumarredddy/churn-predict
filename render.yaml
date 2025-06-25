@@ -1,13 +1,9 @@
 services:
   - type: web
     name: churn-app
+    env: docker
     plan: free
     region: oregon
-    dockerfilePath: Dockerfile
     envVars:
       - key: PORT
-        value: "10000"
-    disk:
-      name: data
-      mountPath: /var/lib/data
-      sizeGB: 1
+        value: 10000
