@@ -1,21 +1,22 @@
-import os
-import pickle
 import numpy as np
-import pandas as pd
+import pickle
 from flask import Flask, request, render_template, url_for
+import lime
 import lime.lime_tabular
-import shap
+import pandas as pd
 from sklearn.preprocessing import LabelEncoder
+import shap
+import os
 import logging
 
-app = Flask(__name__)
+# Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load model
 model = pickle.load(open("RFC_Model", "rb"))
 
-# Define features
+# Feature configuration
 numerical_features = ['tenure', 'MonthlyCharges', 'TotalCharges']
 categorical_features = [
     'Contract', 'TechSupport', 'OnlineSecurity', 'InternetService',
@@ -24,23 +25,28 @@ categorical_features = [
 ]
 feature_names = numerical_features + categorical_features
 
-# Prepare training data for encoders and LIME
-df_train = pd.read_csv("Telco-Customer-Churn.csv")
-df_train['TotalCharges'] = pd.to_numeric(df_train['TotalCharges'], errors='coerce')
-df_train.dropna(inplace=True)
+# Load and encode training data
+X_train_raw = pd.read_csv("Telco-Customer-Churn.csv")
+X_train_raw['TotalCharges'] = pd.to_numeric(X_train_raw['TotalCharges'], errors='coerce')
 
 label_encoders = {}
 for col in categorical_features:
     le = LabelEncoder()
-    le.fit(df_train[col].astype(str))
+    le.fit(X_train_raw[col].astype(str))
     label_encoders[col] = le
-    df_train[col] = le.transform(df_train[col].astype(str))
 
-df_train[numerical_features] = df_train[numerical_features].apply(pd.to_numeric, errors='coerce')
-X_train = df_train[feature_names]
+X_train_processed = X_train_raw[feature_names].copy()
+X_train_processed[numerical_features] = X_train_processed[numerical_features].apply(pd.to_numeric, errors='coerce')
+X_train_processed.dropna(inplace=True)
 
-# SHAP Explainer
+for col in categorical_features:
+    X_train_processed[col] = label_encoders[col].transform(X_train_processed[col].astype(str))
+
+# SHAP explainer
 shap_explainer = shap.TreeExplainer(model)
+
+# Initialize Flask app
+app = Flask(__name__)
 
 @app.route("/")
 def home():
@@ -52,24 +58,26 @@ def predict():
         form_data = request.form
         input_data = []
         for feature in feature_names:
-            val = form_data.get(feature)
+            value = form_data.get(feature)
             if feature in numerical_features:
-                input_data.append(float(val))
+                input_data.append(float(value))
             else:
-                input_data.append(label_encoders[feature].transform([val])[0])
+                input_data.append(label_encoders[feature].transform([value])[0])
+
         input_df = pd.DataFrame([input_data], columns=feature_names)
 
-        # Model prediction
+        # Predict churn probability
         risk_score = model.predict_proba(input_df)[0][1]
         risk_category = "High" if risk_score > 0.7 else "Medium" if risk_score > 0.3 else "Low"
-        if risk_category == "High":
+
+        if risk_score > 0.7:
             retention_actions = ["Grant loyalty benefits", "Offer cashback offers", "Schedule agent call to customer"]
-        elif risk_category == "Medium":
+        elif risk_score > 0.3:
             retention_actions = ["Grant loyalty points"]
         else:
             retention_actions = ["No Action Required"]
 
-        # Rule-based logic
+        # Rule-based risk
         def rule_based_risk(form_data):
             high = [
                 form_data['Contract'] == 'Month-to-month',
@@ -101,7 +109,7 @@ def predict():
 
         # LIME Explanation
         explainer = lime.lime_tabular.LimeTabularExplainer(
-            training_data=X_train.values,
+            training_data=X_train_processed.values,
             feature_names=feature_names,
             class_names=["No Churn", "Churn"],
             mode="classification"
@@ -109,16 +117,26 @@ def predict():
         explanation = explainer.explain_instance(input_df.values[0], model.predict_proba, num_features=5)
         lime_html = explanation.as_html()
 
-        # SHAP Explanation - write HTML to static file
+        # SHAP force plot generation
         try:
             shap_values = shap_explainer.shap_values(input_df)
-            shap_html = shap.plots.force(
-                base_value=shap_explainer.expected_value[1],
-                shap_values=shap_values[1][0],
-                features=input_df.iloc[0],
+
+            # Handle both list or ndarray formats
+            if isinstance(shap_values, list):
+                shap_value = shap_values[1][0]  # class 1 for churn
+                base_val = shap_explainer.expected_value[1]
+            else:
+                shap_value = shap_values[0]
+                base_val = shap_explainer.expected_value
+
+            shap_html_code = shap.plots.force(
+                base_val,
+                shap_value,
+                input_df.iloc[0],
                 matplotlib=False
             )
-            shap_html_content = f"""
+
+            html_out = f"""
                 <!DOCTYPE html>
                 <html>
                 <head>
@@ -127,14 +145,15 @@ def predict():
                 </head>
                 <body>
                     <div id='shap'></div>
-                    <script>{shap_html.js_code}</script>
+                    <script>{shap_html_code.js_code}</script>
                 </body>
                 </html>
             """
-            os.makedirs("static", exist_ok=True)
-            with open("static/shap.html", "w", encoding="utf-8") as f:
-                f.write(shap_html_content)
-            shap_path = url_for("static", filename="shap.html")
+            os.makedirs("templates", exist_ok=True)
+            with open("templates/shap.html", "w", encoding="utf-8") as f:
+                f.write(html_out)
+
+            shap_path = url_for("shap_plot")
         except Exception as e:
             logger.error(f"SHAP error: {e}")
             shap_path = None
@@ -146,8 +165,14 @@ def predict():
                                rule_based_category=rule_based_category,
                                lime_html=lime_html,
                                shap_plot=shap_path)
+
     except Exception as e:
+        logger.error(f"Prediction error: {e}")
         return f"Error: {str(e)}"
+
+@app.route("/shap")
+def shap_plot():
+    return render_template("shap.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
