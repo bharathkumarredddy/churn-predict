@@ -185,8 +185,7 @@
             <div class="shap-container">
                 <h3 class="explanation-title">SHAP Explanation (SHapley Additive exPlanations)</h3>
                 <div class="shap-plot">
-                 <iframe src="{{ url_for('shap_plot') }}" width="100%" height="300" frameborder="0" style="border-radius: 6px;"></iframe>
-
+                  <iframe src="{{ shap_plot }}" width="100%" height="400" style="border:none;"></iframe>
                 </div>
                 <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
                     SHAP values show how each feature contributes to the prediction. Features in red increase the risk of churn,
