@@ -33,9 +33,8 @@
 <body>
     <div class="container">
         <h2>Customer Churn Prediction</h2>
- 
+
         <form method="post" action="/predict">
-            <!-- All form fields (unchanged) -->
             <!-- Contract Type -->
             <div class="form-group">
                 <label for="Contract">Contract Type</label>
@@ -46,13 +45,13 @@
                     <option value="Two year">Two year</option>
                 </select>
             </div>
- 
+
             <!-- Tenure -->
             <div class="form-group">
                 <label for="tenure">Tenure (months)</label>
                 <input type="number" id="tenure" name="tenure" min="0" max="120" required>
             </div>
- 
+
             <!-- Tech Support -->
             <div class="form-group">
                 <label for="TechSupport">Tech Support</label>
@@ -63,7 +62,7 @@
                     <option value="No internet service">No internet service</option>
                 </select>
             </div>
- 
+
             <!-- Online Security -->
             <div class="form-group">
                 <label for="OnlineSecurity">Online Security</label>
@@ -74,7 +73,7 @@
                     <option value="No internet service">No internet service</option>
                 </select>
             </div>
- 
+
             <!-- Internet Service -->
             <div class="form-group">
                 <label for="InternetService">Internet Service</label>
@@ -85,19 +84,19 @@
                     <option value="No">No</option>
                 </select>
             </div>
- 
+
             <!-- Monthly Charges -->
             <div class="form-group">
                 <label for="MonthlyCharges">Monthly Charges (RS)</label>
                 <input type="number" id="MonthlyCharges" name="MonthlyCharges" min="0" step="0.01" required>
             </div>
- 
+
             <!-- Total Charges -->
             <div class="form-group">
                 <label for="TotalCharges">Total Charges (RS)</label>
                 <input type="number" id="TotalCharges" name="TotalCharges" min="0" step="0.01" required>
             </div>
- 
+
             <!-- Payment Method -->
             <div class="form-group">
                 <label for="PaymentMethod">Payment Method</label>
@@ -109,7 +108,7 @@
                     <option value="Credit card (automatic)">Credit card (automatic)</option>
                 </select>
             </div>
- 
+
             <!-- Device Protection -->
             <div class="form-group">
                 <label for="DeviceProtection">Device Protection</label>
@@ -120,7 +119,7 @@
                     <option value="No internet service">No internet service</option>
                 </select>
             </div>
- 
+
             <!-- Online Backup -->
             <div class="form-group">
                 <label for="OnlineBackup">Online Backup</label>
@@ -131,7 +130,7 @@
                     <option value="No internet service">No internet service</option>
                 </select>
             </div>
- 
+
             <!-- Streaming Movies -->
             <div class="form-group">
                 <label for="StreamingMovies">Streaming Movies</label>
@@ -142,7 +141,7 @@
                     <option value="No internet service">No internet service</option>
                 </select>
             </div>
- 
+
             <!-- Streaming TV -->
             <div class="form-group">
                 <label for="StreamingTV">Streaming TV</label>
@@ -153,15 +152,15 @@
                     <option value="No internet service">No internet service</option>
                 </select>
             </div>
- 
+
             <input type="submit" value="Predict Risk Score">
         </form>
- 
+
         {% if risk_score is defined %}
             <div class="results">
                 <h3>Risk Score: {{ risk_score }}%</h3>
                 <h3>Model-Based Risk Category: <span class="{{ risk_category|lower }}">{{ risk_category }}</span></h3>
-               
+
                 {% if retention_actions %}
                     <h3>Retention Actions:</h3>
                     <ul>
@@ -170,23 +169,23 @@
                         {% endfor %}
                     </ul>
                 {% endif %}
- 
+
                 {% if rule_based_category %}
                     <h3>Rule-Based Risk Category: <span class="{{ rule_based_category|lower }}">{{ rule_based_category }}</span></h3>
                 {% endif %}
             </div>
- 
+
             <div class="explanation-container">
                 <h3 class="explanation-title">LIME Explanation (Local Interpretable Model-agnostic Explanations)</h3>
                 <div style="max-height: 400px; overflow-y: auto;">
                     {{ lime_html | safe }}
                 </div>
             </div>
- 
+
             <div class="shap-container">
                 <h3 class="explanation-title">SHAP Explanation (SHapley Additive exPlanations)</h3>
                 <div class="shap-plot">
-                    {{ shap_html | safe }}
+                    <iframe src="{{ url_for('shap') }}" width="100%" height="400px" frameborder="0" style="border: none;"></iframe>
                 </div>
                 <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
                     SHAP values show how each feature contributes to the prediction. Features in red increase the risk of churn,
