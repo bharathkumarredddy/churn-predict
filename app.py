@@ -1,3 +1,5 @@
+# app.py
+
 import numpy as np
 import pickle
 from flask import Flask, request, render_template, url_for
@@ -9,14 +11,11 @@ import shap
 import os
 import logging
 
-# Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load trained model
 model = pickle.load(open("RFC_Model", "rb"))
 
-# Feature setup
 numerical_features = ['tenure', 'MonthlyCharges', 'TotalCharges']
 categorical_features = [
     'Contract', 'TechSupport', 'OnlineSecurity', 'InternetService',
@@ -25,7 +24,6 @@ categorical_features = [
 ]
 feature_names = numerical_features + categorical_features
 
-# Load and preprocess training data
 X_train_raw = pd.read_csv("Telco-Customer-Churn.csv")
 X_train_raw['TotalCharges'] = pd.to_numeric(X_train_raw['TotalCharges'], errors='coerce')
 
@@ -41,10 +39,8 @@ X_train_processed.dropna(inplace=True)
 for col in categorical_features:
     X_train_processed[col] = label_encoders[col].transform(X_train_processed[col].astype(str))
 
-# SHAP explainer
 shap_explainer = shap.TreeExplainer(model)
 
-# Flask app
 app = Flask(__name__)
 
 @app.route("/")
@@ -75,7 +71,6 @@ def predict():
         else:
             retention_actions = ["No Action Required"]
 
-        # Rule-based logic
         def rule_based_risk(form_data):
             high = [
                 form_data['Contract'] == 'Month-to-month',
@@ -105,7 +100,6 @@ def predict():
 
         rule_based_category = rule_based_risk(form_data)
 
-        # LIME
         explainer = lime.lime_tabular.LimeTabularExplainer(
             training_data=X_train_processed.values,
             feature_names=feature_names,
@@ -115,7 +109,6 @@ def predict():
         explanation = explainer.explain_instance(input_df.values[0], model.predict_proba, num_features=5)
         lime_html = explanation.as_html()
 
-        # SHAP force plot
         try:
             shap_values = shap_explainer.shap_values(input_df)
             shap_html_code = shap.plots.force(
