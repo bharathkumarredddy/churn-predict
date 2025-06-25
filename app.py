@@ -8,6 +8,12 @@ from sklearn.preprocessing import LabelEncoder
 import shap
 import os
 from shap import Explanation
+import logging
+
+
+# Logging setup
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
  
 # Load trained RandomForestClassifier model
 model = pickle.load(open("RFC_Model", "rb"))
@@ -80,47 +86,50 @@ def rule_based_risk(form_data):
  
 # Function to generate SHAP force plot HTML
 def generate_shap_plot(input_df):
-    # Calculate SHAP values
-    shap_values = shap_explainer.shap_values(input_df)
-   
-    # For binary classification, we'll use the SHAP values for class 1 (churn)
-    if isinstance(shap_values, list):
-        shap_values = shap_values[1]
-        base_value = shap_explainer.expected_value[1]
-    else:
-        base_value = shap_explainer.expected_value
-   
-    # Create force plot
-    force_plot = shap.force_plot(
-        base_value=base_value,
-        shap_values=shap_values[0],
-        features=input_df.iloc[0],
-        feature_names=feature_names,
-        matplotlib=False,
-        show=False
-    )
-   
-    # Save to temporary HTML file with UTF-8 encoding
-    temp_file = 'temp_shap.html'
-    shap.save_html(temp_file, force_plot)
-   
-    # Read the HTML content with UTF-8 encoding
     try:
-        with open(temp_file, 'r', encoding='utf-8') as file:
-            shap_html = file.read()
-    except UnicodeDecodeError:
-        # Fallback to latin-1 if UTF-8 fails (though it shouldn't with SHAP output)
-        with open(temp_file, 'r', encoding='latin-1') as file:
-            shap_html = file.read()
-   
-    # Delete the temporary file
-    try:
-        os.remove(temp_file)
-    except:
-        pass
-   
-    return shap_html
- 
+        explainer = shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(input_df)
+
+        # For RandomForestClassifier: shap_values is a list (one per class)
+        # We choose the SHAP values for the "churn" class (usually class 1)
+        class_idx = 1 if isinstance(shap_values, list) else 0
+        shap_vals = shap_values[class_idx] if isinstance(shap_values, list) else shap_values
+
+        # Generate force plot (base value must be passed first in v0.48.0)
+        force_plot = shap.plots.force(
+            explainer.expected_value[class_idx] if isinstance(explainer.expected_value, list) else explainer.expected_value,
+            shap_vals[0],
+            input_df.iloc[0],
+            matplotlib=False
+        )
+
+        # Save the SHAP force plot as an HTML file
+        shap_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='utf-8'>
+            <script src='https://cdn.jsdelivr.net/npm/shap@latest/dist/bundle.js'></script>
+        </head>
+        <body>
+            <div id='shap'></div>
+            <script>
+                const shapPlot = {force_plot.js_code};
+                shapPlot('shap');
+            </script>
+        </body>
+        </html>
+        """
+
+        os.makedirs("templates", exist_ok=True)
+        with open("templates/shap.html", "w", encoding="utf-8") as f:
+            f.write(shap_html)
+
+        return True
+    except Exception as e:
+        logger.error(f"SHAP error: {e}")
+        return False
+
 # Flask app
 app = Flask(__name__)
  
