@@ -11,79 +11,81 @@
         <h2>Customer Churn Prediction</h2>
 
         <form method="post" action="/predict">
+            <!-- Input Fields -->
             {% for field in [
                 ('Contract', 'Contract Type', ['Month-to-month', 'One year', 'Two year']),
-                ('TechSupport', 'Tech Support', ['Yes', 'No', 'No internet service']),
-                ('OnlineSecurity', 'Online Security', ['Yes', 'No', 'No internet service']),
-                ('InternetService', 'Internet Service', ['DSL', 'Fiber optic', 'No']),
+                ('tenure', 'Tenure (months)', 'number'),
+                ('TechSupport', 'Tech Support', ['No', 'Yes', 'No internet service']),
+                ('OnlineSecurity', 'Online Security', ['No', 'Yes', 'No internet service']),
+                ('InternetService', 'Internet Service', ['Fiber optic', 'DSL', 'No']),
+                ('MonthlyCharges', 'Monthly Charges (RS)', 'number'),
+                ('TotalCharges', 'Total Charges (RS)', 'number'),
                 ('PaymentMethod', 'Payment Method', ['Electronic check', 'Mailed check', 'Bank transfer (automatic)', 'Credit card (automatic)']),
-                ('DeviceProtection', 'Device Protection', ['Yes', 'No', 'No internet service']),
-                ('OnlineBackup', 'Online Backup', ['Yes', 'No', 'No internet service']),
-                ('StreamingMovies', 'Streaming Movies', ['Yes', 'No', 'No internet service']),
-                ('StreamingTV', 'Streaming TV', ['Yes', 'No', 'No internet service'])
+                ('DeviceProtection', 'Device Protection', ['No', 'Yes', 'No internet service']),
+                ('OnlineBackup', 'Online Backup', ['No', 'Yes', 'No internet service']),
+                ('StreamingMovies', 'Streaming Movies', ['No', 'Yes', 'No internet service']),
+                ('StreamingTV', 'Streaming TV', ['No', 'Yes', 'No internet service'])
             ] %}
-            <div class="form-group">
-                <label for="{{ field[0] }}">{{ field[1] }}</label>
-                <select name="{{ field[0] }}" required>
-                    <option value="">Select {{ field[1] }}</option>
-                    {% for option in field[2] %}
-                        <option value="{{ option }}">{{ option }}</option>
-                    {% endfor %}
-                </select>
-            </div>
+                <div class="form-group">
+                    <label for="{{ field[0] }}">{{ field[1] }}</label>
+                    {% if field[2] == 'number' %}
+                        <input type="number" id="{{ field[0] }}" name="{{ field[0] }}" required>
+                    {% else %}
+                        <select id="{{ field[0] }}" name="{{ field[0] }}" required>
+                            <option value="">Select {{ field[1] }}</option>
+                            {% for option in field[2] %}
+                                <option value="{{ option }}">{{ option }}</option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                </div>
             {% endfor %}
-
-            <div class="form-group">
-                <label for="tenure">Tenure (months)</label>
-                <input type="number" name="tenure" required>
-            </div>
-            <div class="form-group">
-                <label for="MonthlyCharges">Monthly Charges (RS)</label>
-                <input type="number" step="0.01" name="MonthlyCharges" required>
-            </div>
-            <div class="form-group">
-                <label for="TotalCharges">Total Charges (RS)</label>
-                <input type="number" step="0.01" name="TotalCharges" required>
-            </div>
 
             <input type="submit" value="Predict Risk Score">
         </form>
 
         {% if risk_score is defined %}
-        <div class="results">
-            <h3>Risk Score: {{ risk_score }}%</h3>
-            <h3>Model-Based Risk Category: <span class="{{ risk_category|lower }}">{{ risk_category }}</span></h3>
+            <div class="results">
+                <h3>Risk Score: {{ risk_score }}%</h3>
+                <h3>Model-Based Risk Category: <span class="{{ risk_category|lower }}">{{ risk_category }}</span></h3>
 
-            {% if retention_actions %}
-            <h3>Retention Actions:</h3>
-            <ul>
-                {% for action in retention_actions %}
-                <li class="{{ risk_category|lower }}">{{ action }}</li>
-                {% endfor %}
-            </ul>
-            {% endif %}
+                {% if retention_actions %}
+                    <h3>Retention Actions:</h3>
+                    <ul>
+                        {% for action in retention_actions %}
+                            <li class="{{ risk_category|lower }}">{{ action }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
 
-            {% if rule_based_category %}
-            <h3>Rule-Based Risk Category: <span class="{{ rule_based_category|lower }}">{{ rule_based_category }}</span></h3>
-            {% endif %}
-        </div>
+                {% if rule_based_category %}
+                    <h3>Rule-Based Risk Category: <span class="{{ rule_based_category|lower }}">{{ rule_based_category }}</span></h3>
+                {% endif %}
+            </div>
 
-        <div class="explanation-container">
-            <h3 class="explanation-title">LIME Explanation</h3>
-            <div style="max-height: 400px; overflow-y: auto;">{{ lime_html | safe }}</div>
-        </div>
+            <!-- LIME -->
+            <div class="explanation-container">
+                <h3 class="explanation-title">LIME Explanation (Local Interpretable Model-agnostic Explanations)</h3>
+                <div style="max-height: 400px; overflow-y: auto;">
+                    {{ lime_html | safe }}
+                </div>
+            </div>
 
-        <div class="shap-container">
-            <h3 class="explanation-title">SHAP Explanation (SHapley Additive exPlanations)</h3>
-            {% if shap_plot %}
-                <iframe src="{{ shap_plot }}" width="100%" height="400" style="border:none;"></iframe>
-            {% else %}
-                <p>SHAP explanation could not be generated.</p>
-            {% endif %}
-            <p class="shap-note">
-                SHAP values show how each feature contributes to the prediction. Features in red increase the risk of churn, while features in blue decrease it. The base value is the average prediction.
-            </p>
-        </div>
+            <!-- SHAP -->
+            <div class="shap-container">
+                <h3 class="explanation-title">SHAP Explanation (SHapley Additive exPlanations)</h3>
+                {% if shap_plot %}
+                    <div class="shap-plot">
+                        <iframe src="{{ shap_plot }}" width="100%" height="400" style="border:none;"></iframe>
+                    </div>
+                {% else %}
+                    <p style="color: red;">SHAP explanation could not be generated.</p>
+                {% endif %}
+                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                    SHAP values show how each feature contributes to the prediction. Features in red increase the risk of churn,
+                    while features in blue decrease it. The base value is the average prediction.
+                </p>
+            </div>
         {% endif %}
     </div>
 </body>
