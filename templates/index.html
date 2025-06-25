@@ -5,6 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Churn Risk Predictor</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .high { color: #d9534f; font-weight: bold; }
+        .medium { color: #f0ad4e; font-weight: bold; }
+        .low { color: #5cb85c; font-weight: bold; }
+        .results { margin: 20px 0; padding: 15px; border-radius: 5px; background-color: #f8f9fa; }
+        .explanation-container, .shap-container { 
+            margin-top: 30px; 
+            padding: 15px; 
+            border-radius: 5px; 
+            background-color: #f8f9fa; 
+        }
+        .explanation-title { 
+            color: #2c3e50; 
+            border-bottom: 1px solid #ddd; 
+            padding-bottom: 10px; 
+            margin-bottom: 15px; 
+        }
+        .shap-plot img { max-width: 100%; height: auto; }
+        .form-group { margin-bottom: 15px; }
+        input, select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
+        input[type="submit"] { background-color: #2c3e50; color: white; cursor: pointer; }
+        input[type="submit"]:hover { background-color: #1a252f; }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -29,7 +52,7 @@
                 <div class="form-group">
                     <label for="{{ field[0] }}">{{ field[1] }}</label>
                     {% if field[2] == 'number' %}
-                        <input type="number" id="{{ field[0] }}" name="{{ field[0] }}" required>
+                        <input type="number" id="{{ field[0] }}" name="{{ field[0] }}" required step="any">
                     {% else %}
                         <select id="{{ field[0] }}" name="{{ field[0] }}" required>
                             <option value="">Select {{ field[1] }}</option>
@@ -63,20 +86,20 @@
                 {% endif %}
             </div>
 
-            <!-- LIME -->
+            <!-- LIME Explanation -->
             <div class="explanation-container">
-                <h3 class="explanation-title">LIME Explanation (Local Interpretable Model-agnostic Explanations)</h3>
+                <h3 class="explanation-title">LIME Explanation</h3>
                 <div style="max-height: 400px; overflow-y: auto;">
                     {{ lime_html | safe }}
                 </div>
             </div>
 
-            <!-- SHAP -->
+            <!-- SHAP Explanation -->
             <div class="shap-container">
-                <h3 class="explanation-title">SHAP Explanation (SHapley Additive exPlanations)</h3>
+                <h3 class="explanation-title">SHAP Explanation</h3>
                 {% if shap_plot %}
                     <div class="shap-plot">
-                        <iframe src="{{ shap_plot }}" width="100%" height="400" style="border:none;"></iframe>
+                        <img src="{{ shap_plot }}" alt="SHAP Explanation">
                     </div>
                 {% else %}
                     <p style="color: red;">SHAP explanation could not be generated.</p>

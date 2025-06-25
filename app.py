@@ -8,6 +8,7 @@ from sklearn.preprocessing import LabelEncoder
 import shap
 import os
 import logging
+import matplotlib.pyplot as plt
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -46,6 +47,7 @@ shap_explainer = shap.TreeExplainer(model)
 
 # Flask app
 app = Flask(__name__)
+app.config['STATIC_FOLDER'] = 'static'
 
 @app.route("/")
 def home():
@@ -115,44 +117,32 @@ def predict():
         explanation = explainer.explain_instance(input_df.values[0], model.predict_proba, num_features=5)
         lime_html = explanation.as_html()
 
-        # SHAP force plot (v0.44.1 compatible)
+        # SHAP visualization
         try:
-            shap_values = shap_explainer.shap_values(input_df)
-            force_plot_html = shap.force_plot(
-                shap_explainer.expected_value[1],
-                shap_values[1][0],
-                input_df.iloc[0],
-                feature_names=input_df.columns,
-                matplotlib=False,
-                show=False
-            )
-            shap_html = f"""
-                <!DOCTYPE html>
-                <html>
-                <head><meta charset='utf-8'><script src='https://cdn.jsdelivr.net/npm/shap@latest/dist/bundle.js'></script></head>
-                <body><div id='shap'></div><script>{force_plot_html.js_code}</script></body>
-                </html>
-            """
-            with open("templates/shap.html", "w", encoding="utf-8") as f:
-                f.write(shap_html)
-            shap_path = url_for("shap_plot")
+            shap_values = shap_explainer(input_df)
+            
+            # Create and save waterfall plot
+            plt.figure()
+            shap.plots.waterfall(shap_values[0], max_display=10, show=False)
+            shap_path = os.path.join(app.config['STATIC_FOLDER'], 'shap_plot.png')
+            plt.savefig(shap_path, bbox_inches='tight')
+            plt.close()
+            shap_url = url_for('static', filename='shap_plot.png')
         except Exception as e:
             logger.error(f"SHAP error: {e}")
-            shap_path = None
+            shap_url = None
 
         return render_template("index.html",
-                               risk_score=round(risk_score * 100, 2),
-                               risk_category=risk_category,
-                               retention_actions=retention_actions,
-                               rule_based_category=rule_based_category,
-                               lime_html=lime_html,
-                               shap_plot=shap_path)
+                            risk_score=round(risk_score * 100, 2),
+                            risk_category=risk_category,
+                            retention_actions=retention_actions,
+                            rule_based_category=rule_based_category,
+                            lime_html=lime_html,
+                            shap_plot=shap_url)
     except Exception as e:
-        return f"Error: {str(e)}"
-
-@app.route("/shap")
-def shap_plot():
-    return render_template("shap.html")
+        logger.error(f"Prediction error: {str(e)}")
+        return render_template("error.html", error_message=str(e))
 
 if __name__ == "__main__":
+    os.makedirs(app.config['STATIC_FOLDER'], exist_ok=True)
     app.run(debug=True)
