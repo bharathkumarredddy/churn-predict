@@ -1,6 +1,6 @@
 import numpy as np
 import pickle
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, url_for
 import lime
 import lime.lime_tabular
 import pandas as pd
@@ -119,9 +119,9 @@ def predict():
         try:
             shap_values = shap_explainer.shap_values(input_df)
             shap_html_code = shap.plots.force(
-                base_value=shap_explainer.expected_value[1],
-                shap_values=shap_values[1][0],
-                features=input_df.iloc[0],
+                shap_explainer.expected_value[1],
+                shap_values[1][0],
+                input_df.iloc[0],
                 matplotlib=False
             )
             html_out = f"""
@@ -131,9 +131,10 @@ def predict():
                 <body><div id='shap'></div><script>{shap_html_code.js_code}</script></body>
                 </html>
             """
+            os.makedirs("templates", exist_ok=True)
             with open("templates/shap.html", "w", encoding="utf-8") as f:
                 f.write(html_out)
-            shap_path = "/shap"
+            shap_path = url_for("shap_plot")
         except Exception as e:
             logger.error(f"SHAP error: {e}")
             shap_path = None
