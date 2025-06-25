@@ -6,6 +6,7 @@
     <title>Churn Risk Predictor</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
         .high { color: #d9534f; font-weight: bold; }
         .medium { color: #f0ad4e; font-weight: bold; }
         .low { color: #5cb85c; font-weight: bold; }
@@ -22,11 +23,19 @@
             padding-bottom: 10px; 
             margin-bottom: 15px; 
         }
-        .shap-plot img { max-width: 100%; height: auto; }
         .form-group { margin-bottom: 15px; }
         input, select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ddd; }
-        input[type="submit"] { background-color: #2c3e50; color: white; cursor: pointer; }
+        input[type="submit"] { 
+            background-color: #2c3e50; 
+            color: white; 
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer; 
+            font-size: 16px;
+        }
         input[type="submit"]:hover { background-color: #1a252f; }
+        #shap-plot-img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
     </style>
 </head>
 <body>
@@ -52,7 +61,7 @@
                 <div class="form-group">
                     <label for="{{ field[0] }}">{{ field[1] }}</label>
                     {% if field[2] == 'number' %}
-                        <input type="number" id="{{ field[0] }}" name="{{ field[0] }}" required step="any">
+                        <input type="number" id="{{ field[0] }}" name="{{ field[0] }}" required step="any" min="0">
                     {% else %}
                         <select id="{{ field[0] }}" name="{{ field[0] }}" required>
                             <option value="">Select {{ field[1] }}</option>
@@ -99,14 +108,14 @@
                 <h3 class="explanation-title">SHAP Explanation</h3>
                 {% if shap_plot %}
                     <div class="shap-plot">
-                        <img src="{{ shap_plot }}" alt="SHAP Explanation">
+                        <img id="shap-plot-img" src="{{ shap_plot }}" alt="SHAP Explanation">
                     </div>
                 {% else %}
                     <p style="color: red;">SHAP explanation could not be generated.</p>
                 {% endif %}
                 <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                    SHAP values show how each feature contributes to the prediction. Features in red increase the risk of churn,
-                    while features in blue decrease it. The base value is the average prediction.
+                    The SHAP plot shows which features are most important for this prediction.
+                    Features in red increase the risk of churn, while features in blue decrease it.
                 </p>
             </div>
         {% endif %}

@@ -10,12 +10,16 @@ import os
 import logging
 import matplotlib.pyplot as plt
 
+# Fix numpy bool deprecation
+np.bool = bool
+
 # Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load trained model
-model = pickle.load(open("RFC_Model", "rb"))
+with open("RFC_Model", "rb") as f:
+    model = pickle.load(f)
 
 # Feature setup
 numerical_features = ['tenure', 'MonthlyCharges', 'TotalCharges']
@@ -48,6 +52,7 @@ shap_explainer = shap.TreeExplainer(model)
 # Flask app
 app = Flask(__name__)
 app.config['STATIC_FOLDER'] = 'static'
+app.config['TEMPLATES_AUTO_RELOAD'] = True
 
 @app.route("/")
 def home():
@@ -119,11 +124,11 @@ def predict():
 
         # SHAP visualization
         try:
-            shap_values = shap_explainer(input_df)
+            plt.switch_backend('Agg')  # Set non-interactive backend
+            shap_values = shap_explainer.shap_values(input_df)
             
-            # Create and save waterfall plot
             plt.figure()
-            shap.plots.waterfall(shap_values[0], max_display=10, show=False)
+            shap.summary_plot(shap_values, input_df, plot_type="bar", show=False)
             shap_path = os.path.join(app.config['STATIC_FOLDER'], 'shap_plot.png')
             plt.savefig(shap_path, bbox_inches='tight')
             plt.close()
