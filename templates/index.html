@@ -28,6 +28,15 @@
             width: 100%;
             overflow-x: auto;
         }
+        .results h3 span.high {
+            color: red;
+        }
+        .results h3 span.medium {
+            color: orange;
+        }
+        .results h3 span.low {
+            color: green;
+        }
     </style>
 </head>
 <body>
@@ -35,121 +44,110 @@
         <h2>Customer Churn Prediction</h2>
 
         <form method="post" action="/predict">
-            <!-- Contract Type -->
+            <!-- Looping through all input fields -->
             <div class="form-group">
                 <label for="Contract">Contract Type</label>
-                <select id="Contract" name="Contract" required>
+                <select name="Contract" required>
                     <option value="">Select Contract Type</option>
-                    <option value="Month-to-month">Month-to-month</option>
-                    <option value="One year">One year</option>
-                    <option value="Two year">Two year</option>
+                    <option>Month-to-month</option>
+                    <option>One year</option>
+                    <option>Two year</option>
                 </select>
             </div>
 
-            <!-- Tenure -->
             <div class="form-group">
                 <label for="tenure">Tenure (months)</label>
-                <input type="number" id="tenure" name="tenure" min="0" max="120" required>
+                <input type="number" name="tenure" min="0" max="120" required>
             </div>
 
-            <!-- Tech Support -->
             <div class="form-group">
                 <label for="TechSupport">Tech Support</label>
-                <select id="TechSupport" name="TechSupport" required>
+                <select name="TechSupport" required>
                     <option value="">Select Tech Support</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
+                    <option>No</option>
+                    <option>Yes</option>
+                    <option>No internet service</option>
                 </select>
             </div>
 
-            <!-- Online Security -->
             <div class="form-group">
                 <label for="OnlineSecurity">Online Security</label>
-                <select id="OnlineSecurity" name="OnlineSecurity" required>
+                <select name="OnlineSecurity" required>
                     <option value="">Select Online Security</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
+                    <option>No</option>
+                    <option>Yes</option>
+                    <option>No internet service</option>
                 </select>
             </div>
 
-            <!-- Internet Service -->
             <div class="form-group">
                 <label for="InternetService">Internet Service</label>
-                <select id="InternetService" name="InternetService" required>
+                <select name="InternetService" required>
                     <option value="">Select Internet Service</option>
-                    <option value="Fiber optic">Fiber optic</option>
-                    <option value="DSL">DSL</option>
-                    <option value="No">No</option>
+                    <option>Fiber optic</option>
+                    <option>DSL</option>
+                    <option>No</option>
                 </select>
             </div>
 
-            <!-- Monthly Charges -->
             <div class="form-group">
                 <label for="MonthlyCharges">Monthly Charges (RS)</label>
-                <input type="number" id="MonthlyCharges" name="MonthlyCharges" min="0" step="0.01" required>
+                <input type="number" name="MonthlyCharges" min="0" step="0.01" required>
             </div>
 
-            <!-- Total Charges -->
             <div class="form-group">
                 <label for="TotalCharges">Total Charges (RS)</label>
-                <input type="number" id="TotalCharges" name="TotalCharges" min="0" step="0.01" required>
+                <input type="number" name="TotalCharges" min="0" step="0.01" required>
             </div>
 
-            <!-- Payment Method -->
             <div class="form-group">
                 <label for="PaymentMethod">Payment Method</label>
-                <select id="PaymentMethod" name="PaymentMethod" required>
+                <select name="PaymentMethod" required>
                     <option value="">Select Payment Method</option>
-                    <option value="Electronic check">Electronic check</option>
-                    <option value="Mailed check">Mailed check</option>
-                    <option value="Bank transfer (automatic)">Bank transfer (automatic)</option>
-                    <option value="Credit card (automatic)">Credit card (automatic)</option>
+                    <option>Electronic check</option>
+                    <option>Mailed check</option>
+                    <option>Bank transfer (automatic)</option>
+                    <option>Credit card (automatic)</option>
                 </select>
             </div>
 
-            <!-- Device Protection -->
             <div class="form-group">
                 <label for="DeviceProtection">Device Protection</label>
-                <select id="DeviceProtection" name="DeviceProtection" required>
+                <select name="DeviceProtection" required>
                     <option value="">Select Device Protection</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
+                    <option>No</option>
+                    <option>Yes</option>
+                    <option>No internet service</option>
                 </select>
             </div>
 
-            <!-- Online Backup -->
             <div class="form-group">
                 <label for="OnlineBackup">Online Backup</label>
-                <select id="OnlineBackup" name="OnlineBackup" required>
+                <select name="OnlineBackup" required>
                     <option value="">Select Online Backup</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
+                    <option>No</option>
+                    <option>Yes</option>
+                    <option>No internet service</option>
                 </select>
             </div>
 
-            <!-- Streaming Movies -->
             <div class="form-group">
                 <label for="StreamingMovies">Streaming Movies</label>
-                <select id="StreamingMovies" name="StreamingMovies" required>
+                <select name="StreamingMovies" required>
                     <option value="">Select Streaming Movies</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
+                    <option>No</option>
+                    <option>Yes</option>
+                    <option>No internet service</option>
                 </select>
             </div>
 
-            <!-- Streaming TV -->
             <div class="form-group">
                 <label for="StreamingTV">Streaming TV</label>
-                <select id="StreamingTV" name="StreamingTV" required>
+                <select name="StreamingTV" required>
                     <option value="">Select Streaming TV</option>
-                    <option value="No">No</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No internet service">No internet service</option>
+                    <option>No</option>
+                    <option>Yes</option>
+                    <option>No internet service</option>
                 </select>
             </div>
 
@@ -157,41 +155,46 @@
         </form>
 
         {% if risk_score is defined %}
-            <div class="results">
-                <h3>Risk Score: {{ risk_score }}%</h3>
-                <h3>Model-Based Risk Category: <span class="{{ risk_category|lower }}">{{ risk_category }}</span></h3>
+        <div class="results">
+            <h3>Risk Score: {{ risk_score }}%</h3>
+            <h3>Model-Based Risk Category: <span class="{{ risk_category|lower }}">{{ risk_category }}</span></h3>
 
-                {% if retention_actions %}
-                    <h3>Retention Actions:</h3>
-                    <ul>
-                        {% for action in retention_actions %}
-                            <li class="{{ risk_category|lower }}">{{ action }}</li>
-                        {% endfor %}
-                    </ul>
+            {% if retention_actions %}
+            <h3>Retention Actions:</h3>
+            <ul>
+                {% for action in retention_actions %}
+                <li class="{{ risk_category|lower }}">{{ action }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            {% if rule_based_category %}
+            <h3>Rule-Based Risk Category: <span class="{{ rule_based_category|lower }}">{{ rule_based_category }}</span></h3>
+            {% endif %}
+        </div>
+
+        <div class="explanation-container">
+            <h3 class="explanation-title">LIME Explanation (Local Interpretable Model-agnostic Explanations)</h3>
+            <div style="max-height: 400px; overflow-y: auto;">
+                {{ lime_html | safe }}
+            </div>
+        </div>
+
+        <div class="shap-container">
+            <h3 class="explanation-title">SHAP Explanation (SHapley Additive exPlanations)</h3>
+            <div class="shap-plot">
+                {% if shap_plot %}
+                    <iframe src="{{ shap_plot }}" width="100%" height="400" style="border:none;"></iframe>
+                {% else %}
+                    <p>SHAP explanation could not be generated.</p>
                 {% endif %}
-
-                {% if rule_based_category %}
-                    <h3>Rule-Based Risk Category: <span class="{{ rule_based_category|lower }}">{{ rule_based_category }}</span></h3>
-                {% endif %}
             </div>
-
-            <div class="explanation-container">
-                <h3 class="explanation-title">LIME Explanation (Local Interpretable Model-agnostic Explanations)</h3>
-                <div style="max-height: 400px; overflow-y: auto;">
-                    {{ lime_html | safe }}
-                </div>
-            </div>
-
-            <div class="shap-container">
-                <h3 class="explanation-title">SHAP Explanation (SHapley Additive exPlanations)</h3>
-                <div class="shap-plot">
-                  <iframe src="{{ shap_plot }}" width="100%" height="400" style="border:none;"></iframe>
-                </div>
-                <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                    SHAP values show how each feature contributes to the prediction. Features in red increase the risk of churn,
-                    while features in blue decrease it. The base value is the average prediction.
-                </p>
-            </div>
+            <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                SHAP values show how each feature contributes to the prediction.
+                Features in red increase the risk of churn, while features in blue decrease it.
+                The base value is the average prediction.
+            </p>
+        </div>
         {% endif %}
     </div>
 </body>
